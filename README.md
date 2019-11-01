@@ -1,6 +1,6 @@
 # ru_watcher
 
-ru_watcher is a script to get the menu for a given day in [UFSC's Restaurante Universitário](https://ru.ufsc.br) UFSC's Restaurante Universitario.
+ru_watcher is a script to get the menu for a given day in [UFSC's Restaurante Universitário](https://ru.ufsc.br)
 
 ## Getting started
 
