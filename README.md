@@ -1,6 +1,6 @@
 # ru_watcher
 
-ru_watcher is a script to get the menu for a given day in [UFSC's Restaurante Universitário](https://ru.ufsc.br)
+ru_watcher is a script to get the menu for a given day in [UFSC's Restaurante Universitário](https://ru.ufsc.br).
 
 ## Getting started
 
@@ -17,7 +17,7 @@ python ru_watcher.py {date}
 ```
 or you can symlink with
 ```
-ln -s /path/to/ru_watcher.py/ /destination/path/ru_watcher
+ln -s /path/to/ru_watcher.py/ /destination/path/new_name
 ```
 where
 ```
@@ -27,14 +27,13 @@ is a path that appears when you run
 ```
 echo $PATH
 ```
-(you can also change the name ru_watcher to whatever you like) and run
+and run
 ```
-chmod +x /destionation/path/ru_watcher
+chmod +x /destionation/path/new_name
 ```
-. This will let you call ru_watcher anywhere in your system simply by entering the command 
+This will let you call ru_watcher anywhere in your system simply by entering the command (assuming the #! line correctly points to your python installation)
 ```
-ru_watcher {date}
+new_name {date}
 ```
-(assuming the #! line correctly points to your python installation)
 
 To see the arguments the program accepts you can either run it without any arguments or with "help" as the first argument.
