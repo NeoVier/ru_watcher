@@ -7,12 +7,34 @@ Github: https://github.com/NeoVier
 Description: ru_watcher is a script to get the menu for a given day in UFSC's ru
 """
 
-from sys import argv
-import datetime
-import time
-import re
-import requests
-from bs4 import BeautifulSoup
+from sys import argv            # Command line arguments
+from pathlib import Path        # Handle directory and file locations
+import datetime                 # Handle dates
+import time                     # Handle dates
+import pickle                   # Write and read contents from file
+import requests                 # Get HTML Content from web page
+from bs4 import BeautifulSoup   # Parse HTML
+
+
+def dump_week(week, location):
+    """
+    :week: Content to be dumped
+    :location: Location of file to be written
+    """
+    with open(location, 'wb') as cache_file:
+        pickle.dump(week, cache_file)
+
+def read_file(location):
+    """
+    :location: Path to file
+    :returns: Contents of file if it exists. Else, None
+    """
+    try:
+        with open(location, 'rb') as cache_file:
+            contents = pickle.load(cache_file)
+        return contents
+    except FileNotFoundError:
+        return None
 
 def get_contents(url):
     """
@@ -30,26 +52,26 @@ def get_contents(url):
         print("Time out na requisicao.")
         quit()
 
-def get_daily_menu(soup, date):
+def get_daily_menu(menu, date):
     """
-    Given a BeautifulSoup instance and a date, get the date's menu
+    Given a list and a date, get the date's menu
+    :menu: week's menu
+    :date: target date
     :returns: Menu in a string format
     """
-    pattern = re.compile(date)
-    tds = soup.find("td", text=pattern)
-    if tds:
-        menu = tds.parent.text
-        return menu
-    print(f"Data invalida({date}).")
+    for index, line in enumerate(menu):
+        if date in line:
+            start = index
+            return menu[start]
     return None
 
 def get_week_menu(soup):
-    """TODO: Docstring for get_week_menu.
+    """
+    :soup:
     :returns: TODO
     """
     trs = soup.findAll("tr")[1:8]
-    menu = [x.text for x in trs]
-    return '\n'.join(menu)
+    return [x.text for x in trs]
 
 def help_text():
     """
@@ -60,39 +82,77 @@ def help_text():
     print("\t- hoje/today\n\t- amanha/tomorrow\n\t- formato %d.%m.%Y\n\t- dia (%d) \
             \n\t- semana/week")
 
-def handle_date(soup, date):
+def handle_date(week, date):
     """
     Formats date correctly and returns menu accordingly
     :returns: Menu from given date
     """
     if date in ["hoje", "today"]:
-        return get_daily_menu(soup, time.strftime("%d.%m.%Y"))
+        return get_daily_menu(week, time.strftime("%d.%m.%Y"))
     if date in ["amanha", "tomorrow"]:
         tomorrow = datetime.date.today() + datetime.timedelta(hours=24)
-        return get_daily_menu(soup, tomorrow.strftime("%d.%m.%Y"))
+        return get_daily_menu(week, tomorrow.strftime("%d.%m.%Y"))
     if date.isdigit():
-        return get_daily_menu(soup, str(date)+time.strftime(".%m.%Y"))
+        return get_daily_menu(week, str(date)+time.strftime(".%m.%Y"))
     if date.lower() in ["semana", "week"]:
-        return get_week_menu(soup)
+        return '\n'.join(week)
     help_text()
-    return False
+    return None
+
+def week_file(week):
+    """
+    :file_contents: A list containing the week's menu
+    :returns: Bool saying if the file is from the same week as today
+    """
+    # Get first and last days of file and today's date, all as ints
+    first_date = week[0].split(' ')[0][1:]
+    last_date = week[-1].split(' ')[0][1:]
+    first_day = int(first_date[:2])
+    last_day = int(last_date[:2])
+    today = int(time.strftime("%d"))
+
+    # Check if today is between the first and last days in file
+    return first_day < today < last_day
 
 def main():
     """
     Main function. Defines url, calls handle_date and get_contents and prints the result of get_menu
     """
+    # Parse arguments
     if len(argv) != 2 or argv[1] in ["help", "ajuda"]:
         help_text()
         quit()
-
     date = argv[1].lower()
 
-    url = "https://ru.ufsc.br/ru/"
-    soup = get_contents(url)
-    menu = handle_date(soup, date)
+    # Handle .cache dir and cache file
+    cache_dir = Path(f'{Path.home()}/.cache')
+    if not cache_dir.exists():
+        cache_dir.mkdir()
 
-    if menu:
-        print(menu)
+    cache_location = f'{Path.home()}/.cache/ru_watcher'
+    file_contents = read_file(cache_location)
+
+
+    # If cache file already exists and is this week's menu
+    if file_contents and week_file(file_contents):
+        # Get the data from the file
+        menu = handle_date(file_contents, date)
+        if menu:
+            print(menu)
+    # Cache file doesn't help us, so get the data online and save it to the file for future use
+    else:
+        # Get online content
+        url = "https://ru.ufsc.br/ru/"
+        soup = get_contents(url)
+
+        # Get week content and save it to cache file
+        week_menu = get_week_menu(soup)
+        dump_week(week_menu, cache_location)
+
+        # Handle date
+        menu = handle_date(week_menu, date)
+        if menu:
+            print(menu)
 
 if __name__ == "__main__":
     main()
