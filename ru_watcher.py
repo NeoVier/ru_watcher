@@ -9,6 +9,7 @@ Description: ru_watcher is a script to get the menu for a given day in UFSC's ru
 
 from sys import argv            # Command line arguments
 from pathlib import Path        # Handle directory and file locations
+from os import remove           # Clear cache file
 import datetime                 # Handle dates
 import time                     # Handle dates
 import pickle                   # Write and read contents from file
@@ -38,7 +39,7 @@ def read_file(location):
 
 def get_contents(url):
     """
-    Returns web content from a given url
+    Returns web content from a given URL
     :returns: Web content as a BeautifulSoup object
     """
     try:
@@ -46,10 +47,10 @@ def get_contents(url):
         soup = BeautifulSoup(request.text, features="html.parser")
         return soup
     except ConnectionError:
-        print("Erro na rede. Verifique sua conexao.")
+        print("Erro na rede. Verifique sua conexão.")
         quit()
     except TimeoutError:
-        print("Time out na requisicao.")
+        print("Time out na requisição.")
         quit()
 
 def get_daily_menu(menu, date):
@@ -72,15 +73,6 @@ def get_week_menu(soup):
     """
     trs = soup.findAll("tr")[1:8]
     return [x.text for x in trs]
-
-def help_text():
-    """
-    Prints argument help text
-    """
-    print("Uso: ru_watcher [Arg]")
-    print("Arg pode ser:\n - help: mostra este texto\n - Data:")
-    print("\t- hoje/today\n\t- amanha/tomorrow\n\t- formato %d.%m.%Y\n\t- dia (%d) \
-            \n\t- semana/week")
 
 def handle_date(week, date):
     """
@@ -114,15 +106,27 @@ def week_file(week):
     # Check if today is between the first and last days in file
     return first_day < today < last_day
 
+# def clear_cache(location):
+
+def help_text():
+    """
+    Prints argument help text
+    """
+    print("Uso: ru_watcher COMANDO")
+    print("COMANDO pode ser:\n - help: mostra este texto\n - limpar/clear: remove arquivo de cache \
+            \n - Data:")
+    print("\t- hoje/today\n\t- amanha/tomorrow\n\t- formato %d.%m.%Y\n\t- dia (%d) \
+            \n\t- semana/week")
+
 def main():
     """
-    Main function. Defines url, calls handle_date and get_contents and prints the result of get_menu
+    Main function. Defines URL, calls handle_date and get_contents and prints the result of get_menu
     """
     # Parse arguments
     if len(argv) != 2 or argv[1] in ["help", "ajuda"]:
         help_text()
-        quit()
-    date = argv[1].lower()
+        return
+    command = argv[1].lower()
 
     # Handle .cache dir and cache file
     cache_dir = Path(f'{Path.home()}/.cache')
@@ -130,13 +134,17 @@ def main():
         cache_dir.mkdir()
 
     cache_location = f'{Path.home()}/.cache/ru_watcher'
-    file_contents = read_file(cache_location)
 
+    if command in ["clear", "limpar"]:
+        remove(cache_location)
+        return
+
+    file_contents = read_file(cache_location)
 
     # If cache file already exists and is this week's menu
     if file_contents and week_file(file_contents):
         # Get the data from the file
-        menu = handle_date(file_contents, date)
+        menu = handle_date(file_contents, command)
         if menu:
             print(menu)
     # Cache file doesn't help us, so get the data online and save it to the file for future use
@@ -150,7 +158,7 @@ def main():
         dump_week(week_menu, cache_location)
 
         # Handle date
-        menu = handle_date(week_menu, date)
+        menu = handle_date(week_menu, command)
         if menu:
             print(menu)
 
