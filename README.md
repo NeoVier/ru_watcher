@@ -9,6 +9,10 @@ To get the program, you can just run
 git clone https://github.com/NeoVier/ru_watcher/
 ```
 
+### Dependencies
+
+To actually get the content from the website, I used the requests library, and to interpret it, the BeautifulSoup4 library, both available for download with pip.
+
 ## Usage
 
 To run, you can either run
